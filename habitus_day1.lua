@@ -56,7 +56,7 @@ pat2_rate_seq = Sequins{4,-4,2,-2,Sequins{4,3,2,1,-1,-2,-3,-4}}
 
 -- initialize the script (run whenever the script is loaded)
 function init()
-  params:set("monitor_level",0) -- turn off the monitor level
+  params:set("monitor_level",-inf) -- turn off the monitor level
   build_scale()
   init_lattice()
   init_softcut()
