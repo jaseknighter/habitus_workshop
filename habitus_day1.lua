@@ -28,7 +28,7 @@
 
 -- require build-in norns libs
 Lattice = require ("lattice")
-Sequins = require("sequins")
+s = require("sequins")
 MusicUtil = require("musicutil")
 
 -- include custom libs
@@ -46,9 +46,9 @@ rec = 0.5
 pre = 0.5
 slew = 0.05
 
-pat1_div_seq = Sequins{1/16,1/8}
-pat2_div_seq = Sequins{1/4,1/8,1/2}
-pat2_rate_seq = Sequins{4,-4,2,-2,Sequins{4,3,2,1,-1,-2,-3,-4}}
+pat1_div_seq = s{1/16,1/8}
+pat2_div_seq = s{1/4,1/8,1/2}
+pat2_rate_seq = s{4,-4,2,-2,s{4,3,2,1,-1,-2,-3,-4}}
 
 --------------------------
 -- initialization functions
@@ -91,7 +91,7 @@ function init_lattice()
   lat_pat2 = lat:new_pattern{
     action = function(t) 
 
-      -- option 1: set the rate according to a Sequins pattern
+      -- option 1: set the rate according to a s pattern
       set_rate(pat2_rate_seq())
 
       -- option 2: set the rate according to detected frequency
