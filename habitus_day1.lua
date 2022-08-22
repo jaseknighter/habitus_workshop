@@ -9,10 +9,12 @@
 -- E1 rate
 -- E2 rec level
 -- E3 pre level
--- K2 toggles rec
--- K3 toggles pre
+-- K2 repeat recording indefinitely
+-- K3 set rec and pre to 50
 --
 -- K1+E1 rate slew
+-- K1+E2 frequency multipier
+-- K1+E2 loop length
 
 
 -- references 
@@ -45,6 +47,9 @@ latest_pitch = 0
 rec = 0.5
 pre = 0.5
 slew = 0.05
+
+freq_mult = 10
+loop_end = 3
 
 pat1_div_seq = s{1/16,1/8}
 pat2_div_seq = s{1/4,1/8,1/2}
@@ -79,8 +84,8 @@ function init_lattice()
   -- setup a pattern to sequence softcut's filter frequency and rq
   lat_pat1 = lat:new_pattern{
     action = function(t) 
-      softcut.post_filter_fc (1, latest_pitch*10)
-      softcut.post_filter_rq (1, 1/latest_pitch*10)
+      softcut.post_filter_fc (1, latest_pitch*freq_mult)
+      softcut.post_filter_rq (1, 1/latest_pitch*freq_mult)
       lat_pat1:set_division(pat1_div_seq())
     end,
     division = 1/4,
@@ -120,7 +125,7 @@ function init_softcut()
   softcut.rate(1,1.0)
   softcut.loop(1,1)
   softcut.loop_start(1,1)
-  softcut.loop_end(1,3)
+  softcut.loop_end(1,loop_end)
   softcut.position(1,1)
   softcut.play(1,1)
 
@@ -184,11 +189,21 @@ function enc(n,d)
       set_slew(val)
     end
   elseif n==2 then
-    local val = util.clamp(rec+d/100,0,1)
-    set_rec(val)
+    if alt_key_active == false then
+      local val = util.clamp(rec+d/100,0,1)
+      set_rec(val)
+    else 
+      local val = util.clamp(freq_mult+d,5,100)
+      set_freq_mult(val)
+    end
   elseif n==3 then
-    local val = util.clamp(pre+d/100,0,1)
-    set_pre(val)
+    if alt_key_active == false then
+      local val = util.clamp(pre+d/100,0,1)
+      set_pre(val)
+    else 
+      local val = util.clamp(loop_end+d/100,0.01,3)
+      set_loop_length(val)
+    end
   end
 end
 
@@ -196,18 +211,17 @@ end
 function key(n,z)
   if n==1 and z == 0 then 
     alt_key_active = false 
-  else 
+  elseif n==1 and z == 1 then  
     alt_key_active = true 
-  end
-
-  if n==2 and z==1 then
-    -- turn softcut recording on and off
-    if rec==0 then rec = 1 else rec = 0 end
-    softcut.rec_level(1,rec)
+  elseif n==2 and z==1 then
+    -- repeat recorded audio indefinitely
+    set_rec(0)
+    set_pre(1)
   elseif n==3 and z==1 then
-    -- turn softcut pre level on and off
-    if pre==1 then pre = 0 else pre = 1 end
-    softcut.pre_level(1,pre)
+    -- set rec and pre to 50
+    set_rec(0.5)
+    set_pre(0.5)
+
   end
 
   -- set dirty_screen to true to redraw the screen 
@@ -215,7 +229,7 @@ function key(n,z)
 end
 
 --------------------------
--- rate/rec/pre functions
+-- rate/rec/pre/freq_mult/loop_end functions
 --------------------------
 
 function set_rate(val)
@@ -246,6 +260,21 @@ function set_pre(val)
   -- change the prelevel of softcut channel 1
     pre = val
     softcut.pre_level(1,pre)
+    -- set dirty_screen to true to redraw the screen 
+    fn.dirty_screen(true)
+  end
+
+  function set_freq_mult(val)
+  -- set the frequency multipier
+    freq_mult = val
+    -- set dirty_screen to true to redraw the screen 
+    fn.dirty_screen(true)
+  end
+
+  function set_loop_length(val)
+  -- set the length of the recording loop
+    loop_end = val
+    softcut.loop_end(1,loop_end)
     -- set dirty_screen to true to redraw the screen 
     fn.dirty_screen(true)
   end
@@ -285,15 +314,15 @@ function redraw()
   end
 
   screen.move(10,30) 
-  screen.text("rate: ") 
+  screen.text("rate ") 
   screen.move(55,30)
   screen.text_right(string.format("%.2f",rate))
   screen.move(10,40)
-  screen.text("rec: ")
+  screen.text("rec ")
   screen.move(55,40)
   screen.text_right(string.format("%.2f",rec))
   screen.move(10,50)
-  screen.text("pre: ")
+  screen.text("pre ")
   screen.move(55,50)
   screen.text_right(string.format("%.2f",pre))
 
@@ -306,17 +335,17 @@ function redraw()
   end
 
   screen.move(65,30) 
-  screen.text("slew: ") 
-  screen.move(115,30)
+  screen.text("slew ") 
+  screen.move(120,30)
   screen.text_right(string.format("%.2f",slew))
   screen.move(65,40)
-  screen.text("??????: ")
-  screen.move(115,40)
-  -- screen.text_right(string.format("%.2f",xxxxx))
+  screen.text("freq * ")
+  screen.move(120,40)
+  screen.text_right(string.format("%.2f",freq_mult))
   screen.move(65,50)
-  screen.text("??????: ")
-  screen.move(115,50)
-  -- screen.text_right(string.format("%.2f",xxxxx))
+  screen.text("loop len ")
+  screen.move(120,50)
+  screen.text_right(string.format("%.2f",loop_end))
 
   -- update the screen with asssbove changes
   screen.update()
