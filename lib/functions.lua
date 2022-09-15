@@ -58,12 +58,8 @@ function fn.dirty_screen(bool)
     return screen_dirty
 end
 
-function rerun()
-  norns.script.load(norns.state.script)
-end
-
 function r()
-    rerun()
+  norns.rerun()
 end
 
 return fn
