@@ -6,15 +6,20 @@
 -- v0.1
 --    ▼ instructions below ▼
 --
--- E1 rate
--- E2 rec level
--- E3 pre level
 -- K2 repeat recording indefinitely
 -- K3 set rec and pre to 50
 --
--- K1+E1 rate slew
--- K1+E2 frequency multipier
--- K1+E2 loop length
+-- long press K1: toggle controls
+--
+-- left side:
+-- E1 rate
+-- E2 rec level
+-- E3 pre level
+--
+-- right side:
+-- E1 rate slew
+-- E2 frequency multipier
+-- E3 loop length
 
 
 -- references 
@@ -28,7 +33,7 @@
 -- include files and set globals/constant variables
 --------------------------
 
--- require build-in norns libs
+-- require built-in norns libs
 Lattice = require ("lattice")
 s = require("sequins")
 MusicUtil = require("musicutil")
@@ -38,9 +43,8 @@ include ("lib/functions")
 include ("lib/parameters")
 
 -- set global variables
-
-initializing = true
-alt_key_active = false 
+monitor_level = nil
+right_side_focus = false 
 
 rate = 1.0
 latest_pitch = 0
@@ -59,17 +63,18 @@ pat2_rate_seq = s{4,-4,2,-2,s{4,3,2,1,-1,-2,-3,-4}}
 -- initialization functions
 --------------------------
 
--- initialize the script (run whenever the script is loaded)
+-- initialize the script (this runs whenever the script is loaded)
 function init()
+  -- capture the current monitor level to be restored when the script unloads
+  monitor_level = params:get("monitor_level") 
   params:set("monitor_level",-inf) -- turn off the monitor level
   build_scale()
   init_lattice()
   init_softcut()
-  init_reroute_audio()
+  -- init_reroute_audio()
   init_polling()  
   set_redraw_timer()
 
-  initializing = false
   lat:start()
 end
 
@@ -149,12 +154,12 @@ function init_softcut()
 end
 
 -- reroute the audio to allow pitch detection from audio in and softcut
-function init_reroute_audio()
-    os.execute("jack_connect crone:output_5 SuperCollider:in_1;")  
-    os.execute("jack_connect crone:output_6 SuperCollider:in_2;")
-    os.execute("jack_connect softcut:output_1 SuperCollider:in_1;")  
-    os.execute("jack_connect softcut:output_2 SuperCollider:in_2;")      
-end  
+-- function init_reroute_audio()
+--     os.execute("jack_connect crone:output_5 SuperCollider:in_1;")  
+--     os.execute("jack_connect crone:output_6 SuperCollider:in_2;")
+--     os.execute("jack_connect softcut:output_1 SuperCollider:in_1;")  
+--     os.execute("jack_connect softcut:output_2 SuperCollider:in_2;")      
+-- end  
 
 -- setup  polling for built-in pitch detection
 function init_polling()
@@ -181,7 +186,7 @@ end
 -- encoder turn code
 function enc(n,d)
   if n==1 then
-    if alt_key_active == false then
+    if right_side_focus == false then
       local val = util.clamp(rate+d/100,-4,4)
       set_rate(val)
     else
@@ -189,7 +194,7 @@ function enc(n,d)
       set_slew(val)
     end
   elseif n==2 then
-    if alt_key_active == false then
+    if right_side_focus == false then
       local val = util.clamp(rec+d/100,0,1)
       set_rec(val)
     else 
@@ -197,7 +202,7 @@ function enc(n,d)
       set_freq_mult(val)
     end
   elseif n==3 then
-    if alt_key_active == false then
+    if right_side_focus == false then
       local val = util.clamp(pre+d/100,0,1)
       set_pre(val)
     else 
@@ -209,16 +214,14 @@ end
 
 -- key press code
 function key(n,z)
-  if n==1 and z == 0 then 
-    alt_key_active = false 
-  elseif n==1 and z == 1 then  
-    alt_key_active = true 
+  if n==1 and z == 1 then 
+    right_side_focus = not right_side_focus 
   elseif n==2 and z==1 then
     -- repeat recorded audio indefinitely
     set_rec(0)
     set_pre(1)
   elseif n==3 and z==1 then
-    -- set rec and pre to 50
+    -- set rec and pre to 50%
     set_rec(0.5)
     set_pre(0.5)
 
@@ -286,18 +289,13 @@ function set_pre(val)
 -- set a timer to redraw every 1/15th of a second
 function set_redraw_timer()
     redrawtimer = metro.init(function() 
-      local menu_status = norns.menu.status()
-      -- check if the user is in the norns menus screens and
-      -- check if the script is done initializing
-      if menu_status == false and initializing == false then
-        if not fn.dirty_screen() then -- don't do anything if dirty_screen returns false
-          return 
-        else -- otherwise redraw
-          redraw()
-          fn.dirty_screen(false)  
-        end
+      if not fn.dirty_screen() then -- don't do anything if dirty_screen returns false
+        return 
+      else -- otherwise redraw
+        redraw()
+        fn.dirty_screen(false)  
       end
-    end, 1/15, -1)
+    end, 1/15, -1) -- 1/15 sets the refresh rate and -1 means repeat forever 
     redrawtimer:start()  
 end
   
@@ -307,7 +305,7 @@ function redraw()
   screen.clear() -- clear the screen 
   
   -- draw line if k1 is not pressed
-  if alt_key_active == false then
+  if right_side_focus == false then
     screen.move(10,20)
     screen.line(55,20)
     screen.stroke()
@@ -328,7 +326,7 @@ function redraw()
 
   -- draw left ui
   -- draw line if k1 is pressed
-  if alt_key_active == true then
+  if right_side_focus == true then
     screen.move(65,20)
     screen.line(115,20)
     screen.stroke()
@@ -356,10 +354,12 @@ end
 --------------------------
 
 function cleanup()
-    -- add cleanup code
-    os.execute("jack_disconnect softcut:output_1 SuperCollider:in_1;")  
-    os.execute("jack_disconnect softcut:output_2 SuperCollider:in_2;")
-    os.execute("jack_connect crone:output_5 SuperCollider:in_1;")  
-    os.execute("jack_connect crone:output_6 SuperCollider:in_2;")
+  -- restore the monitor level from when the script was first loaded
+  params:set("monitor_level",monitor_level) 
+
+--     os.execute("jack_disconnect softcut:output_1 SuperCollider:in_1;")  
+--     os.execute("jack_disconnect softcut:output_2 SuperCollider:in_2;")
+--     os.execute("jack_connect crone:output_5 SuperCollider:in_1;")  
+--     os.execute("jack_connect crone:output_6 SuperCollider:in_2;")
   
 end
