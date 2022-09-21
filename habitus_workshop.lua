@@ -1,4 +1,4 @@
--- habitus day 1: pitch detection
+-- habitus workshop code: pitch detection
 --
 -- description
 --
