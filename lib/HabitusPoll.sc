@@ -1,8 +1,15 @@
-Habitus_poll {
+HabitusPoll {
 
+	// instantiate variables here
 	var <passthrough;
-	var <amplitude; // NEW: we want to query our outgoing amplitude from norns, so we'll make this a 'getter'
+	// we want 'passthrough' to be accessible any time we instantiate this class,
+	// so we prepend it with '<', to turn it into a 'getter' method.
+	// see 'Getters and Setters' at https://doc.sccode.org/Guides/WritingClasses.html for more info.
+	var <amplitude; // we want to query our outgoing amplitude from norns, so we'll make this a 'getter'
 
+	// in SuperCollider, asterisks denote functions which are specific to the class.
+	// '*initClass' will be called when the 'Habitus' class is initialized.
+	// see https://doc.sccode.org/Classes/Class.html#*initClass for more info.
 	*initClass {
 
 		StartUp.add {
@@ -13,7 +20,7 @@ Habitus_poll {
 
 				// define a simple 'input multiplied by amplitude value' synth called 'inOutAmp':
 				SynthDef(\inOutAmp, {
-					// NEW: we're giving each channel of incoming audio its own amp value:
+					// we're giving each channel of incoming audio its own amp value:
 					arg ampL = 1, ampR = 1, levelOutL, levelOutR;
 					var soundL, soundR, ampTrackL, ampTrackR;
 
@@ -23,7 +30,6 @@ Habitus_poll {
 					ampTrackR = Amplitude.kr(in: soundR * ampR);
 
 					Out.ar(0, [soundL * ampL, soundR * ampR]);
-					// NEW:
 					// we send the amplitude of each channel, after adjustment, to a control bus:
 					Out.kr(levelOutL, ampTrackL);
 					Out.kr(levelOutR, ampTrackR);
@@ -33,6 +39,7 @@ Habitus_poll {
 		} // StartUp
 	} // *initClass
 
+	// after the class is initialized...
 	*new {
 		^super.new.init;
 	}
@@ -40,23 +47,22 @@ Habitus_poll {
 	init {
 		var s = Server.default;
 
-		// NEW:
 		// we'll build an 'amplitude' array of control busses, one for each channel:
 		amplitude = Array.fill(2, { arg i; Bus.control(s); });
 
+		// create 'passthrough' using the 'inOutAmp' SynthDef:
 		passthrough = Synth.new(\inOutAmp, [
 			\ampL, 1,
 			\ampR, 1,
-			// NEW:
 			// we'll assign the outgoing level values to each channel's amplitude array entry:
 			\levelOutL, amplitude[0].index,
 			\levelOutR, amplitude[1].index,
 		]);
 
-		s.sync;
+		s.sync; // sync the changes above to the server
 	} // init
 
-	// NEW: set each channel inividually
+	// create a command to set each channel individually
 	setAmp { arg side, amp;
 		passthrough.set(\amp++side, amp);
 	}
@@ -65,7 +71,7 @@ Habitus_poll {
 	// free our processes after we're done with the engine:
 	free {
 		passthrough.free;
-		// NEW: free our control busses!
+		// free our control busses!
 		amplitude.do({ arg bus; bus.free; });
 	} // free
 

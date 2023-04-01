@@ -1,6 +1,7 @@
--- habitus: passthru engine example
+-- habitus
+-- passthrough engine example
 
-engine.name = 'Habitus'
+engine.name = 'HabitusPassthrough'
 local pre_init_monitor_level;
 
 function init()
@@ -34,9 +35,37 @@ function init()
   params:set_action('eng_amp',
     function(x)
       engine.amp(x)
+      screen_dirty = true
     end
   )
+
+  screen_dirty = true
+  redraw_timer = metro.init(
+    function() -- what to perform at every tick
+      if screen_dirty == true then
+        redraw()
+        screen_dirty = false
+      end
+    end,
+    1/15 -- how often (15 fps)
+    -- the above will repeat forever by default
+  )
+  redraw_timer:start()
   
+end
+
+function redraw()
+  screen.clear()
+  screen.move(64,32)
+  screen.level(15)
+  screen.font_size(17)
+  screen.text_center('amp: '..params:string('eng_amp'))
+  screen.update()
+end
+
+function enc(n,d)
+  params:delta('eng_amp',d)
+  screen_dirty = true
 end
 
 function cleanup()

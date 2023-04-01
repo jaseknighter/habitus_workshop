@@ -1,10 +1,10 @@
 -- habitus: polling example
--- same passthru engine...
--- but this time:
---   - control over each stereo channel's output
+-- 
+--   - control over each
+--     stereo channel's output
 --   - output polls!
 
-engine.name = 'Habitus_poll'
+engine.name = 'HabitusPoll'
 local pre_init_monitor_level;
 local radii = {0,0} -- we'll redraw our circles with outgoing audio levels for each channel
 
@@ -26,6 +26,7 @@ function init()
   ampR.time = 1/15 -- how often to refresh (redraw is 15fps anyway)
   ampR:start() -- start the poll!
   
+  -- another way to initialize screen redrawing:
   screen_redraw = clock.run(
     function()
       while true do

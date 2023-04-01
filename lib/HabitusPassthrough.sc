@@ -1,4 +1,4 @@
-Habitus {
+HabitusPassthrough {
 
 	// instantiate variables here
 	var <passthrough;

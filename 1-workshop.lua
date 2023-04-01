@@ -1,4 +1,5 @@
--- habitus workshop code: pitch detection
+-- habitus workshop code
+-- // pitch detection \\
 --
 -- description
 --
@@ -6,7 +7,7 @@
 -- v0.1
 --    ▼ instructions below ▼
 --
--- K2 repeat recording indefinitely
+-- K2 freeze recorded audio
 -- K3 set rec and pre to 50
 --
 -- long press K1: toggle controls
@@ -87,7 +88,7 @@ function init_lattice()
   }
 
   -- setup a pattern to sequence softcut's filter frequency and rq
-  lat_pat1 = lat:new_pattern{
+  lat_pat1 = lat:new_sprocket{
     action = function(t) 
       softcut.post_filter_fc (1, latest_pitch*freq_mult)
       softcut.post_filter_rq (1, 1/latest_pitch*freq_mult)
@@ -98,7 +99,7 @@ function init_lattice()
   }
 
   -- setup a pattern to sequence softcut's rate
-  lat_pat2 = lat:new_pattern{
+  lat_pat2 = lat:new_sprocket{
     action = function(t) 
 
       -- option 1: set the rate according to a s pattern

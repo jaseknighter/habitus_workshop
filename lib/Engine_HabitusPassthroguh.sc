@@ -1,4 +1,4 @@
-Engine_Habitus : CroneEngine {
+Engine_HabitusPassthrough : CroneEngine {
 	var kernel, debugPrinter;
 
 	*new { arg context, doneCallback;
@@ -6,7 +6,7 @@ Engine_Habitus : CroneEngine {
 	}
 
 	alloc {
-		kernel = Habitus.new(Crone.server);
+		kernel = HabitusPassthrough.new(Crone.server);
 
 		this.addCommand(\amp, "f", { arg msg;
 			var amp = msg[1].asFloat;
