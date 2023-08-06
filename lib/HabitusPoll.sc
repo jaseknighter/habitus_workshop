@@ -8,7 +8,7 @@ HabitusPoll {
 	var <amplitude; // we want to query our outgoing amplitude from norns, so we'll make this a 'getter'
 
 	// in SuperCollider, asterisks denote functions which are specific to the class.
-	// '*initClass' will be called when the 'Habitus' class is initialized.
+	// '*initClass' will be called when the 'Habitus' class is initialized, at boot.
 	// see https://doc.sccode.org/Classes/Class.html#*initClass for more info.
 	*initClass {
 
@@ -17,31 +17,14 @@ HabitusPoll {
 
 			// we need to make sure the server is running before asking it to do anything
 			s.waitForBoot {
-
-				// define a simple 'input multiplied by amplitude value' synth called 'inOutAmp':
-				SynthDef(\inOutAmp, {
-					// we're giving each channel of incoming audio its own amp value:
-					arg ampL = 1, ampR = 1, levelOutL, levelOutR;
-					var soundL, soundR, ampTrackL, ampTrackR;
-
-					soundL = SoundIn.ar(0);
-					soundR = SoundIn.ar(1);
-					ampTrackL = Amplitude.kr(in: soundL * ampL);
-					ampTrackR = Amplitude.kr(in: soundR * ampR);
-
-					Out.ar(0, [soundL * ampL, soundR * ampR]);
-					// we send the amplitude of each channel, after adjustment, to a control bus:
-					Out.kr(levelOutL, ampTrackL);
-					Out.kr(levelOutR, ampTrackR);
-				}).add;
-
+				// we don't need to do anything!
 			} // s.waitForBoot
 		} // StartUp
 	} // *initClass
 
-	// after the class is initialized...
+	// when our Engine_HabitusPoll.sc file creates its synth...
 	*new {
-		^super.new.init;
+		^super.new.init;  // ...run the 'init' below.
 	}
 
 	init {
@@ -49,6 +32,23 @@ HabitusPoll {
 
 		// we'll build an 'amplitude' array of control busses, one for each channel:
 		amplitude = Array.fill(2, { arg i; Bus.control(s); });
+
+		// define a simple 'input multiplied by amplitude value' synth called 'inOutAmp':
+		SynthDef(\inOutAmp, {
+			// we're giving each channel of incoming audio its own amp value:
+			arg ampL = 1, ampR = 1, levelOutL, levelOutR;
+			var soundL, soundR, ampTrackL, ampTrackR;
+
+			soundL = SoundIn.ar(0);
+			soundR = SoundIn.ar(1);
+			ampTrackL = Amplitude.kr(in: soundL * ampL);
+			ampTrackR = Amplitude.kr(in: soundR * ampR);
+
+			Out.ar(0, [soundL * ampL, soundR * ampR]);
+			// we send the amplitude of each channel, after adjustment, to a control bus:
+			Out.kr(levelOutL, ampTrackL);
+			Out.kr(levelOutR, ampTrackR);
+		}).add;
 
 		// create 'passthrough' using the 'inOutAmp' SynthDef:
 		passthrough = Synth.new(\inOutAmp, [

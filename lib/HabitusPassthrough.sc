@@ -7,7 +7,7 @@ HabitusPassthrough {
 	// see 'Getters and Setters' at https://doc.sccode.org/Guides/WritingClasses.html for more info.
 
 	// in SuperCollider, asterisks denote functions which are specific to the class.
-	// '*initClass' will be called when the 'Habitus' class is initialized.
+	// '*initClass' will be called when the 'Habitus' class is initialized, at boot.
 	// see https://doc.sccode.org/Classes/Class.html#*initClass for more info.
 	*initClass {
 
@@ -16,28 +16,28 @@ HabitusPassthrough {
 
 			// we need to make sure the server is running before asking it to do anything
 			s.waitForBoot {
-
-				// define a simple 'input multiplied by amplitude value' synth called 'inOut':
-				SynthDef(\inOut, {
-					arg amp = 1;
-					var sound;
-
-					sound = SoundIn.ar([0,1]);
-
-					Out.ar(0, sound * amp);
-				}).add;
-
+				// we don't need to do anything!
 			} // s.waitForBoot
 		} // StartUp
 	} // *initClass
 
-	// after the class is initialized...
+	// when our Engine_HabitusPassthrough.sc file creates its synth...
 	*new {
 		^super.new.init;  // ...run the 'init' below.
 	}
 
 	init {
 		var s = Server.default;
+
+		// define a simple 'input multiplied by amplitude value' synth called 'inOut':
+		SynthDef(\inOut, {
+			arg amp = 1;
+			var sound;
+
+			sound = SoundIn.ar([0,1]);
+
+			Out.ar(0, sound * amp);
+		}).add;
 
 		// create 'passthrough' using the 'inOut' SynthDef:
 		passthrough = Synth.new(\inOut, [
